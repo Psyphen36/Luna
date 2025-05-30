@@ -41,7 +41,9 @@ KEYWORD_TRIGGERS = [
     re.compile(r'\bsad\b', re.IGNORECASE),
     re.compile(r'\bfriend\b', re.IGNORECASE),
     re.compile(r'\bfriendly\b', re.IGNORECASE),
-    re.compile(r'\bbright\b', re.IGNORECASE)
+    re.compile(r'\bbright\b', re.IGNORECASE),
+    re.compile(r'\bgirl\b', re.IGNORECASE),
+    re.compile(r'\bwomen\b', re.IGNORECASE)
 ]
 
 # Initialize Shapes API client
