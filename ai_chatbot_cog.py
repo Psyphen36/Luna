@@ -30,7 +30,7 @@ KEYWORD_TRIGGERS = [
     re.compile(r'\bbug bounty\b', re.IGNORECASE),
     re.compile(r'\bhacking\b', re.IGNORECASE),
     re.compile(r'\bdiscord\b', re.IGNORECASE),
-    re.compile(r'\botahun\b', re.IGNORECASE),
+    re.compile(r'\bluna\b', re.IGNORECASE),
     re.compile(r'\bcoding\b', re.IGNORECASE),
     re.compile(r'\banime\b', re.IGNORECASE),
     re.compile(r'\bwaifu\b', re.IGNORECASE),
@@ -47,7 +47,6 @@ KEYWORD_TRIGGERS = [
     re.compile(r'\bsolve this\b', re.IGNORECASE),
     re.compile(r'\bsolve\b', re.IGNORECASE),
     re.compile(r'\bmf\b', re.IGNORECASE),
-    re.compile(r'\bluna\b', re.IGNORECASE)
 ]
 
 # Initialize Shapes API client
