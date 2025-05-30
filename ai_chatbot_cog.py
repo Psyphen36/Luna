@@ -46,7 +46,8 @@ KEYWORD_TRIGGERS = [
     re.compile(r'\bhack\b', re.IGNORECASE),
     re.compile(r'\bsolve this\b', re.IGNORECASE),
     re.compile(r'\bsolve\b', re.IGNORECASE),
-    re.compile(r'\bmf\b', re.IGNORECASE)
+    re.compile(r'\bmf\b', re.IGNORECASE),
+    re.compile(r'\bluna\b', re.IGNORECASE)
 ]
 
 # Initialize Shapes API client
@@ -321,7 +322,7 @@ class AIChatbotCog(commands.Cog):
             logging.info(f"🔄 Sending request to Shapes API for user {message.author} in channel {message.channel.id}")
             api_result = await asyncio.to_thread(
                 shapes.chat.completions.create,
-                model="shapesinc/otahun",
+                model="shapesinc/luna-<3",
                 messages=messages,
                 temperature=0.7,
                 max_tokens=2000,
