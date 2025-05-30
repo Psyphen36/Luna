@@ -70,7 +70,7 @@ def main():
     # Test Shapes API connection
     try:
         test = shapes.chat.completions.create(
-            model="shapesinc/otahun", 
+            model="shapesinc/luna-<3", 
             messages=[{"role":"user","content":"test"}], 
             max_tokens=5
         )
