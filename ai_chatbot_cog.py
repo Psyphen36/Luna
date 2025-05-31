@@ -14,12 +14,16 @@ from openai import OpenAI as RawOpenAI
 
 # ─── CONFIGURATION ─────────────────────────────────────────────────────────────
 SHAPES_API_KEY = os.environ.get("SHAPES_API_KEY")
+MODEL = os.environ.get("MODEL")
 BASE_URL = "https://api.shapes.inc/v1/"
 MAX_CHARS = 2000
 MAX_CONTEXT_MESSAGES = 10  # Number of recent messages to include for context
 RATE_LIMIT_REQUESTS = 10    # Max requests per user per minute
 TYPING_DELAY = 0.5         # Seconds to show typing indicator
 RESET_RE = re.compile(r'(?:^|\s)!reset(?=\s|$|[!.,?])', re.IGNORECASE)
+# ─── NEW: Delay (in seconds) whenever we see another bot message ────────────────
+BOT_DELAY_SECONDS = 5
+
 
 # ─── KEYWORD TRIGGERS ─────────────────────────────────────────────────────────
 # Keys are regex patterns; values are either static replies or callables
@@ -45,7 +49,6 @@ KEYWORD_TRIGGERS = [
     re.compile(r'\bgirl\b', re.IGNORECASE),
     re.compile(r'\bwomen\b', re.IGNORECASE)
 ]
-
 # Initialize Shapes API client
 shapes = RawOpenAI(api_key=SHAPES_API_KEY, base_url=BASE_URL)
 
@@ -147,7 +150,6 @@ class AIChatbotCog(commands.Cog):
             return
 
         # ─── KEYWORD TRIGGER DETECTION ────────────────────────────
-        # If any trigger matches, we'll force the bot to process this message
         forced_active = False
         for regex in KEYWORD_TRIGGERS:
             if regex.search(message.content):
@@ -156,7 +158,10 @@ class AIChatbotCog(commands.Cog):
         
         # ─── BLOCK RESET ────────────────────────────────────────────────────────
         if RESET_RE.search(raw):
-            return await message.channel.send("LoL you thought you have permission to reset my memory! In your dreams! <:smug:1358014214148591768>.")
+            return await message.channel.send(
+                "LoL you thought you have permission to reset my memory! "
+                "In your dreams! <:smug:1358014214148591768>."
+            )
         
         # ─────────────────────────────────────────────────────────────────────────
         stripped = raw.strip()
@@ -200,7 +205,10 @@ class AIChatbotCog(commands.Cog):
             # a keyword triggered, proceed; otherwise bail out.
             if not (is_active or is_mentioned or is_reply_to_bot or forced_active):
                 return
-            # in active mode we drop the "other-bot" check so we can chat with other bots
+            
+            # ─── NEW: If the author is another bot, wait a bit before continuing ─────
+            if message.author.bot:
+                await asyncio.sleep(BOT_DELAY_SECONDS)
 
             # rate-limit, context updates, AI call, etc. continue here...
             if not await self._check_rate_limit(message.author.id):
@@ -230,7 +238,10 @@ class AIChatbotCog(commands.Cog):
     async def _check_rate_limit(self, user_id: int) -> bool:
         now = datetime.now()
         self.rate_limits.setdefault(user_id, [])
-        self.rate_limits[user_id] = [t for t in self.rate_limits[user_id] if now - t < timedelta(minutes=1)]
+        self.rate_limits[user_id] = [
+            t for t in self.rate_limits[user_id] 
+            if now - t < timedelta(minutes=1)
+        ]
         if len(self.rate_limits[user_id]) >= RATE_LIMIT_REQUESTS:
             return False
         self.rate_limits[user_id].append(now)
@@ -269,15 +280,22 @@ class AIChatbotCog(commands.Cog):
         try:
             content = message.content
             for mention in message.mentions:
-                content = content.replace(f'<@!{mention.id}>', f'@{mention.display_name}')
-                content = content.replace(f'<@{mention.id}>', f'@{mention.display_name}')
+                content = content.replace(
+                    f'<@!{mention.id}>', f'@{mention.display_name}'
+                )
+                content = content.replace(
+                    f'<@{mention.id}>', f'@{mention.display_name}'
+                )
             content = content.strip()
 
             # Build messages without system prompt (offloaded to Shapes API)
             messages: List[Dict[str, str]] = []
             try:
                 for m in context.recent_messages:
-                    messages.append({"role": "user", "content": f"{m['author']}: {m['content']}"})
+                    messages.append({
+                        "role": "user", 
+                        "content": f"{m['author']}: {m['content']}"
+                    })
                 recent_context = self._build_context_messages(context, message.channel)
                 messages.extend(recent_context)
             except Exception:
@@ -312,20 +330,29 @@ class AIChatbotCog(commands.Cog):
                     url = f"https://cdn.discordapp.com/stickers/{st.id}.png"
                     messages.append({"role": "user", "content": f"[Sticker] {st.name} {url}"})
 
-            user_msg = f"[BOT] {message.author.display_name}: {content}" if message.author.bot else f"{message.author.display_name}: {content}"
+            user_msg = (
+                f"[BOT] {message.author.display_name}: {content}"
+                if message.author.bot 
+                else f"{message.author.display_name}: {content}"
+            )
             messages.append({"role": "user", "content": user_msg})
 
-            logging.info(f"🔄 Sending request to Shapes API for user {message.author} in channel {message.channel.id}")
+            logging.info(
+                f"🔄 Sending request to Shapes API for user {message.author} "
+                f"in channel {message.channel.id}"
+            )
             api_result = await asyncio.to_thread(
                 shapes.chat.completions.create,
-                model="shapesinc/luna-<3",
+                model=MODEL,
                 messages=messages,
                 temperature=0.7,
                 max_tokens=2000,
                 # pass the Discord user ID (or any string that uniquely identifies them)
                 user=str(message.author.id),
             )
-            logging.info(f"✅ Received response from Shapes API ({len(api_result.choices)} choice(s))")
+            logging.info(
+                f"✅ Received response from Shapes API ({len(api_result.choices)} choice(s))"
+            )
             return api_result.choices[0].message.content
 
         except Exception as e:
