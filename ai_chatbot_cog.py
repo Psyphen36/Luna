@@ -22,7 +22,7 @@ RATE_LIMIT_REQUESTS = 10    # Max requests per user per minute
 TYPING_DELAY = 0.5         # Seconds to show typing indicator
 RESET_RE = re.compile(r'(?:^|\s)!reset(?=\s|$|[!.,?])', re.IGNORECASE)
 # ─── NEW: Delay (in seconds) whenever we see another bot message ────────────────
-BOT_DELAY_SECONDS = 5
+BOT_DELAY_SECONDS = 20
 
 
 # ─── KEYWORD TRIGGERS ─────────────────────────────────────────────────────────
