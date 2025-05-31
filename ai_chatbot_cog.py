@@ -5,6 +5,7 @@ import logging
 import json
 import time
 import re
+import random
 from discord import app_commands
 from discord.ext import commands
 from datetime import datetime, timedelta
@@ -22,8 +23,8 @@ RATE_LIMIT_REQUESTS = 10    # Max requests per user per minute
 TYPING_DELAY = 0.5         # Seconds to show typing indicator
 RESET_RE = re.compile(r'(?:^|\s)!reset(?=\s|$|[!.,?])', re.IGNORECASE)
 # ─── NEW: Delay (in seconds) whenever we see another bot message ────────────────
-BOT_DELAY_SECONDS = 40
-
+BOT_DELAY_MIN = 40.0
+BOT_DELAY_MAX = 200.0
 
 # ─── KEYWORD TRIGGERS ─────────────────────────────────────────────────────────
 # Keys are regex patterns; values are either static replies or callables
@@ -208,7 +209,12 @@ class AIChatbotCog(commands.Cog):
             
             # ─── NEW: If the author is another bot, wait a bit before continuing ─────
             if message.author.bot:
-                await asyncio.sleep(BOT_DELAY_SECONDS)
+                delay_seconds = random.uniform(BOT_DELAY_MIN, BOT_DELAY_MAX)
+                logging.info(
+                    f"ℹ️ Detected bot→bot interaction; sleeping for {delay_seconds:.1f}s before responding."
+                )
+                await asyncio.sleep(delay_seconds)
+
 
             # rate-limit, context updates, AI call, etc. continue here...
             if not await self._check_rate_limit(message.author.id):
